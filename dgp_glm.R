@@ -75,13 +75,11 @@ outcome <- "mace_hf_4"
 (predictors <- names(train)[!names(train)%in%outcome])
 (thisformula <- as.formula(paste0(outcome,"~",paste0(predictors,collapse="+"))))
 glm_model <- glm(thisformula, family='binomial',data=dt)
-dt_a1 <- dt_a0 <- copy(dt)
+dt_a1 <- copy(dt)
+dt_a0 <- copy(dt)
 dt_a1[, names(data)[(grepl("glp",names(data)))] := .(1)]
 dt_a0[, names(data)[(grepl("glp",names(data)))] := .(0)]
-
-
-mean(predict(glm_model,newdata=dt_a1,type='response'))
-mean(predict(glm_model,newdata=dt_a0,type='response'))
+mean(predict(glm_model,newdata=dt_a1,type='response'))-mean(predict(glm_model,newdata=dt_a0,type='response'))
 
 -1/(1+exp(-sum(glm_model$coefficients[names(glm_model$coefficients)[(grepl("glp",names(glm_model$coefficients)))]])))
 

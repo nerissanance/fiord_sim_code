@@ -72,7 +72,7 @@ for(i in 1:length(simdata_list)){
 }
 
 CreateCatTable(data=dt,vars = names(dt)[6:20])
-CreateCatTable(data=simdata,vars = names(simdata)[6:20])
+CreateCatTable(data=simdata_list[[1]],vars = names(simdata)[6:20])
 CreateContTable(data=preds,vars = names(simdata)[6:20])
 
 
@@ -81,15 +81,13 @@ CreateContTable(data=preds,vars = names(simdata)[6:20])
 
 ## find truth
 outcome <- "mace_hf_4"
-(predictors <- names(train)[!names(train)%in%outcome])
-(thisformula <- as.formula(paste0(outcome,"~",paste0(predictors,collapse="+"))))
-glm_model <- glm(thisformula, family='binomial',data=dt)
-dt_a1 <- dt_a0 <- copy(dt)
-dt_a1[, names(data)[(grepl("glp",names(data)))] := .(1)]
-dt_a0[, names(data)[(grepl("glp",names(data)))] := .(0)]
-
-
-mean(predict(glm_model,newdata=dt_a1,type='response'))
-mean(predict(glm_model,newdata=dt_a0,type='response'))
-
--1/(1+exp(-sum(glm_model$coefficients[names(glm_model$coefficients)[(grepl("glp",names(glm_model$coefficients)))]])))
+(predictors <- names(train)[!names(dt)%in%outcome])
+x <- model.matrix(as.formula( ~ .^2),dt[,predictors,with=F])
+glmnet_model <- cv.glmnet(x=x,y=as.matrix(train[,outcome,with=F]), alpha=0, family='binomial')
+dt_a1 <- data.table(copy(dt))
+dt_a0 <- data.table(copy(dt))
+dt_a1[, names(dt_a1)[(grepl("glp",names(dt_a1)))] := .(1)]
+dt_a0[, names(dt_a0)[(grepl("glp",names(dt_a0)))] := .(0)]
+(Y1 <- mean(predict(glmnet_model,newx=model.matrix(as.formula( ~ .^2), dt_a1[,predictors,with=F]),type='response')))
+(Y0 <- mean(predict(glmnet_model,newx=model.matrix(as.formula( ~ .^2), dt_a0[,predictors,with=F]),type='response')))
+(Y1-Y0)

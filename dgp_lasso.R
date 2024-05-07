@@ -18,7 +18,7 @@ library(doRNG)
 dt <-data.table(read.csv("./data/fakedataset.csv"))
 dt <-dt[,-c("X")]
 
-R=100 #number of dataset repetitions
+R=1000 #number of dataset repetitions
 #registerDoRNG(seed = 123)
 set.seed(200)
 
@@ -44,11 +44,11 @@ simdata_list <-foreach(j=1:R)%do%{ #%dopar%
     x <- model.matrix(as.formula( ~ .^2),train[,predictors,with=F])
 
     glmnet_model <- cv.glmnet(x=x,y=as.matrix(train[,outcome,with=F]), alpha=0, family='binomial')
-
+    lambdamin <- glmnet_model$lambda.min
     mses <- matrix(nrow=length(cutoffs))
 
     foreach(k=1:length(cutoffs))%do%{
-      pred_k <- as.numeric(predict(glmnet_model,newx=model.matrix(as.formula( ~ .^2),simdata),
+      pred_k <- as.numeric(predict(glmnet_model,newx=model.matrix(as.formula( ~ .^2),simdata,s = "lambda.min"),#"lambda.1se"
                                    type='response')>cutoffs[k])
       mses[k] <- (sum(train[[outcome]]-pred_k)^2)/nrow(dt)
     }
@@ -63,6 +63,7 @@ simdata_list <-foreach(j=1:R)%do%{ #%dopar%
 }
 
 #stopCluster(cl)
+saveRDS(simdata_list,file="./tmp/simdata_list_1000_glmnet.RDS")
 
 
 ##correlation plot

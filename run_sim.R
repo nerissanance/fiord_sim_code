@@ -3,13 +3,25 @@ library(ltmle)
 library(doParallel)
 library(tidyverse)
 library(SuperLearner)
+library(data.table)
+library(doRNG)
+
 # Set up parallel backend
-(cl <- makeCluster(detectCores()))
+(cl <-makeCluster(detectCores()/2))
 registerDoParallel(cl)
 
+
 #set psi0 for now, need to verify later
-psi0 <- -0.2325635
+psi0 <- -0.13711#-0.0461723#-0.2325635
 #attr(SL.library, "return.fit") == TRUE
+registerDoRNG(seed = 123)
+
+###load data
+simdata_list <- readRDS("./tmp/simdata_list_1000_glm.RDS")
+name <-"simdata_list_300_glm"
+#subset to 300
+simdata_list<-simdata_list[1:300]
+
 
 ##input: simdata_list: list of simulated datasets
 # Function to run analysis with ltmle package
@@ -35,8 +47,8 @@ libs <- rbind(c("SL.mean","SL.glm","SL.speedglm"),c("SL.mean","SL.xgboost","SL.g
 
 # Main simulation loop using foreach
 # Run analysis for each library/truncation level combination
-est_matrix <- foreach(i = 1:length(simdata_list),.combine='rbind') %:%
-                foreach(j = 1:nrow(specs),.combine='cbind') %dopar% {
+est_matrix <- foreach(i = 1:length(simdata_list),.combine='rbind') %:% #
+                foreach(j = 1:nrow(specs),.combine='cbind') %do% {
                   print(paste0("iteration:"))
                   library(ltmle)
                   # Run ltmle analysis
@@ -69,4 +81,5 @@ specs[,truncation:= paste0("[",trunc_levels.V1,",",trunc_levels.V2,"]"),]
 names(output) <- c("SL.library","truncation_levels","bias","mse","o_coverage")
 rownames(output) <-NULL
 kableExtra::kbl(output)
-write.csv(output,paste0("./output/simresults_glm_iter",length(simdata_list),".csv"))
+write.csv(est_matrix,paste0("./tmp/est_matrix_glm_",length(simdata_list),"_Psi0",psi0,".csv"))
+write.csv(output,paste0("./output/simresults_iter",length(simdata_list),"_psi0_",psi0,"_","name",".csv"))

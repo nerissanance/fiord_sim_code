@@ -7,11 +7,10 @@ library(corrplot)
 library(pROC)
 library(foreach)
 library(tableone)
-
 dt <-data.table(read.csv("./data/fakedataset.csv"))
 dt <-dt[,-c("X")]
 
-R=100 #number of dataset repetitions
+R=1000 #number of dataset repetitions
 set.seed(200)
 
 simdata_list <-foreach(j=1:R)%do%{
@@ -75,10 +74,10 @@ outcome <- "mace_hf_4"
 (predictors <- names(train)[!names(train)%in%outcome])
 (thisformula <- as.formula(paste0(outcome,"~",paste0(predictors,collapse="+"))))
 glm_model <- glm(thisformula, family='binomial',data=dt)
-dt_a1 <- copy(dt)
-dt_a0 <- copy(dt)
-dt_a1[, names(data)[(grepl("glp",names(data)))] := .(1)]
-dt_a0[, names(data)[(grepl("glp",names(data)))] := .(0)]
+dt_a1 <- data.table(copy(dt))
+dt_a0 <- data.table(copy(dt))
+dt_a1[, names(dt)[(grepl("glp",names(dt)))] := .(1)]
+dt_a0[, names(dt)[(grepl("glp",names(dt)))] := .(0)]
 mean(predict(glm_model,newdata=dt_a1,type='response'))-mean(predict(glm_model,newdata=dt_a0,type='response'))
 
 -1/(1+exp(-sum(glm_model$coefficients[names(glm_model$coefficients)[(grepl("glp",names(glm_model$coefficients)))]])))
@@ -86,4 +85,4 @@ mean(predict(glm_model,newdata=dt_a1,type='response'))-mean(predict(glm_model,ne
 
 
 
-
+saveRDS(simdata_list,file="./tmp/simdata_list_1000_glm.RDS")

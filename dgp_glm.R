@@ -7,10 +7,11 @@ library(corrplot)
 library(pROC)
 library(foreach)
 library(tableone)
-dt <-data.table(read.csv("./data/fakedataset.csv"))
+dt <-data.table(read.csv("./data/fakedataset_t6.csv"))
 dt <-dt[,-c("X")]
+N_time <- max(as.numeric(sapply(names(dt),function(x){substr(x,nchar(x),nchar(x))})),na.rm=TRUE)
 
-R=1000 #number of dataset repetitions
+R=200#0 #number of dataset repetitions
 set.seed(200)
 
 simdata_list <-foreach(j=1:R)%do%{
@@ -42,9 +43,6 @@ simdata_list <-foreach(j=1:R)%do%{
     # ##select the first one that minimizes auc
      simdata[,outcome] <- as.numeric(predict(glm_model,
                                              newdata=simdata,type='response')>cutoffs[min(grep(min(mses),mses))])
-
-    #simdata[,outcome] <- as.numeric(predict(glm_model,newdata=simdata,type='response')>mean(dt[[outcome]]))
-    #preds[[outcome]] <- predict(glm_model,newdata=simdata,type='response')
 
   }
   return(simdata)
@@ -85,4 +83,5 @@ mean(predict(glm_model,newdata=dt_a1,type='response'))-mean(predict(glm_model,ne
 
 
 
-saveRDS(simdata_list,file="./tmp/simdata_list_1000_glm.RDS")
+saveRDS(simdata_list,file=paste0("./tmp/simdata_list_",as.character(R),"_t",as.character(N_time),"_glm.RDS"))
+

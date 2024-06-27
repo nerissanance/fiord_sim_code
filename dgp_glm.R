@@ -13,6 +13,7 @@ N_time <- max(as.numeric(sapply(names(dt),function(x){substr(x,nchar(x),nchar(x)
 
 R=200#0 #number of dataset repetitions
 set.seed(200)
+R=2
 
 simdata_list <-foreach(j=1:R)%do%{
   print(paste0("begin iteration: ",j))
@@ -42,12 +43,29 @@ simdata_list <-foreach(j=1:R)%do%{
             }
     # ##select the first one that minimizes auc
      simdata[,outcome] <- as.numeric(predict(glm_model,
-                                             newdata=simdata,type='response')>cutoffs[min(grep(min(mses),mses))])
+                                             newdata=simdata,type='response') +rnorm(nrow(simdata),0,0.1)>cutoffs[min(grep(min(mses),mses))])
 
   }
   return(simdata)
 
 }
+
+saveRDS(simdata_list,file=paste0("./tmp/simdata_list_",as.character(R),"_t",as.character(N_time),"_glm.RDS"))
+
+
+# simdata <- simdata_list[[1]]
+# table(simdata$glp1_1, simdata$mace_hf_1)
+# table(simdata$glp1_2, simdata$mace_hf_2)
+# table(simdata$glp1_3, simdata$mace_hf_3)
+# table(simdata$glp1_4, simdata$mace_hf_4)
+#
+# df <- simdata %>% filter(glp1_1==1 & glp1_2==1 & glp1_3==1 & glp1_4==1)
+# table(df$mace_hf_1)
+# table(df$mace_hf_2)
+# table(df$mace_hf_3)
+# table(df$mace_hf_4)
+
+
 
 
 
@@ -83,5 +101,4 @@ mean(predict(glm_model,newdata=dt_a1,type='response'))-mean(predict(glm_model,ne
 
 
 
-saveRDS(simdata_list,file=paste0("./tmp/simdata_list_",as.character(R),"_t",as.character(N_time),"_glm.RDS"))
 

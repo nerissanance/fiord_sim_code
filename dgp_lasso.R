@@ -18,8 +18,9 @@ library(doRNG)
 dt <-data.table(read.csv("./data/fakedataset.csv"))
 dt <-dt[,-c("X")]
 
-R=1000 #number of dataset repetitions
+R=200 #number of dataset repetitions
 #registerDoRNG(seed = 123)
+N_time <- max(as.numeric(sapply(names(dt),function(x){substr(x,nchar(x),nchar(x))})),na.rm=TRUE)
 set.seed(200)
 
 simdata_list <-foreach(j=1:R)%do%{ #%dopar%
@@ -55,7 +56,7 @@ simdata_list <-foreach(j=1:R)%do%{ #%dopar%
     # ##select the first cutoff that minimizes auc
     simdata[,outcome] <- as.numeric(predict(glmnet_model,
                                             newx=model.matrix(as.formula( ~ .^2), simdata),
-                                            type='response')>cutoffs[min(grep(min(mses),mses))])
+                                            type='response')+rnorm(nrow(simdata),0,0.1)>cutoffs[min(grep(min(mses),mses))])
 
   }
   return(simdata)
@@ -64,6 +65,7 @@ simdata_list <-foreach(j=1:R)%do%{ #%dopar%
 
 #stopCluster(cl)
 saveRDS(simdata_list,file="./tmp/simdata_list_1000_glmnet.RDS")
+saveRDS(simdata_list,file=paste0("./tmp/simdata_list_",as.character(R),"_t",as.character(N_time),"_glmnet.RDS"))
 
 
 ##correlation plot
@@ -79,16 +81,3 @@ CreateContTable(data=preds,vars = names(simdata)[6:20])
 
 #transport::wasserstein(dt$age_base, simdata_list[[1]]$age_base, p=1, tplan=NULL, costm=NULL, prob=TRUE)
 #waddR::
-
-## find truth
-outcome <- "mace_hf_4"
-(predictors <- names(train)[!names(dt)%in%outcome])
-x <- model.matrix(as.formula( ~ .^2),dt[,predictors,with=F])
-glmnet_model <- cv.glmnet(x=x,y=as.matrix(train[,outcome,with=F]), alpha=0, family='binomial')
-dt_a1 <- data.table(copy(dt))
-dt_a0 <- data.table(copy(dt))
-dt_a1[, names(dt_a1)[(grepl("glp",names(dt_a1)))] := .(1)]
-dt_a0[, names(dt_a0)[(grepl("glp",names(dt_a0)))] := .(0)]
-(Y1 <- mean(predict(glmnet_model,newx=model.matrix(as.formula( ~ .^2), dt_a1[,predictors,with=F]),type='response')))
-(Y0 <- mean(predict(glmnet_model,newx=model.matrix(as.formula( ~ .^2), dt_a0[,predictors,with=F]),type='response')))
-(Y1-Y0)

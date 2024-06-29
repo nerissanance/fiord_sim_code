@@ -7,13 +7,12 @@ library(corrplot)
 library(pROC)
 library(foreach)
 library(tableone)
-dt <-data.table(read.csv("./data/fakedataset_t6.csv"))
+dt <-data.table(read.csv("./data/fakedataset.csv"))
 dt <-dt[,-c("X")]
 N_time <- max(as.numeric(sapply(names(dt),function(x){substr(x,nchar(x),nchar(x))})),na.rm=TRUE)
 
 R=200#0 #number of dataset repetitions
 set.seed(200)
-R=2
 
 simdata_list <-foreach(j=1:R)%do%{
   print(paste0("begin iteration: ",j))
@@ -70,35 +69,15 @@ saveRDS(simdata_list,file=paste0("./tmp/simdata_list_",as.character(R),"_t",as.c
 
 
 ##correlation plot
-corrplot(cor(as.matrix(dt)), method = "color")
-for(i in 1:3){
-corrplot(cor(as.matrix(simdata_list[[i]])), method = "color")
-}
-
-CreateCatTable(data=dt,vars = names(dt)[6:20])
-CreateCatTable(data=simdata,vars = names(simdata)[6:20])
-CreateContTable(data=preds,vars = names(simdata)[6:20])
+# corrplot(cor(as.matrix(dt)), method = "color")
+# for(i in 1:3){
+# corrplot(cor(as.matrix(simdata_list[[i]])), method = "color")
+# }
+# 
+# CreateCatTable(data=dt,vars = names(dt)[6:20])
+# CreateCatTable(data=simdata,vars = names(simdata)[6:20])
+# CreateContTable(data=preds,vars = names(simdata)[6:20])
 
 
 #transport::wasserstein(dt$age_base, simdata_list[[1]]$age_base, p=1, tplan=NULL, costm=NULL, prob=TRUE)
 #waddR::
-
-
-
-## find truth
-outcome <- "mace_hf_4"
-(predictors <- names(train)[!names(train)%in%outcome])
-(thisformula <- as.formula(paste0(outcome,"~",paste0(predictors,collapse="+"))))
-glm_model <- glm(thisformula, family='binomial',data=dt)
-dt_a1 <- data.table(copy(dt))
-dt_a0 <- data.table(copy(dt))
-dt_a1[, names(dt)[(grepl("glp",names(dt)))] := .(1)]
-dt_a0[, names(dt)[(grepl("glp",names(dt)))] := .(0)]
-mean(predict(glm_model,newdata=dt_a1,type='response'))-mean(predict(glm_model,newdata=dt_a0,type='response'))
-
--1/(1+exp(-sum(glm_model$coefficients[names(glm_model$coefficients)[(grepl("glp",names(glm_model$coefficients)))]])))
-
-
-
-
-

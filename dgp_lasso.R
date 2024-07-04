@@ -18,7 +18,7 @@ library(doRNG)
 dt <-data.table(read.csv("./data/fakedataset.csv"))
 dt <-dt[,-c("X")]
 
-R=200 #number of dataset repetitions
+R=500 #number of dataset repetitions
 #registerDoRNG(seed = 123)
 N_time <- max(as.numeric(sapply(names(dt),function(x){substr(x,nchar(x),nchar(x))})),na.rm=TRUE)
 set.seed(200)
@@ -64,7 +64,6 @@ simdata_list <-foreach(j=1:R)%do%{ #%dopar%
 }
 
 #stopCluster(cl)
-saveRDS(simdata_list,file="./tmp/simdata_list_1000_glmnet.RDS")
 saveRDS(simdata_list,file=paste0("./tmp/simdata_list_",as.character(R),"_t",as.character(N_time),"_glmnet.RDS"))
 
 

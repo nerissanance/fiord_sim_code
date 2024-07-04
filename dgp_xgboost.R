@@ -44,8 +44,38 @@ simdata_list <-foreach(j=1:R)%dopar%{
 
     #create model matrix which includes all pairwise interaction terms
     x <- model.matrix(as.formula( ~ .^2),train[,predictors,with=F])
-
-    xgboost_model <- xgboost(data = x, label=train[[outcome]], max.depth = 2, eta = 1, nthread = 2, nrounds = 2, objective = "binary:logistic", verbose = 2)
+  
+    #cross-validation settings
+    cv_control =
+      caret::trainControl(method = "repeatedcv",
+                          # folds
+                          number = 2L,
+                          # Number of complete sets of folds to compute
+                          repeats = 2L,
+                          classProbs = TRUE)#,
+                          #summaryFunction = twoClassSummary) 
+    
+    (xgb_grid = expand.grid(
+      # Number of trees to fit, aka boosting iterations
+      nrounds = c(100, 300, 500, 700, 900),
+      # Depth of the trees
+      max_depth = c(1, 6), 
+      # Learning rate (smaller=slower) 
+      eta = c(0.0001, 0.01, 0.2),
+      gamma = 0,
+      colsample_bytree = 1.0,
+      subsample = 1.0,
+      min_child_weight = 10L))
+    
+   
+    model = caret::train(x=x , y = train[[outcome]], 
+                         method = "xgbTree",
+                         metric = "ROC",
+                         trControl = cv_control,
+                         tuneGrid = xgb_grid,
+                         verbose = TRUE)
+  #  xgboost_model <- xgboost(data = x, label=train[[outcome]], params=gbmGrid,objective = "binary:logistic", verbose = 2)
+    min(xgb_testparams$evaluation_log$test_logloss_mean)
     mses <- matrix(nrow=length(cutoffs))
 
     foreach(k=1:length(cutoffs))%do%{

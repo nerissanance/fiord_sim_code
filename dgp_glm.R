@@ -11,7 +11,7 @@ dt <-data.table(read.csv("./data/fakedataset.csv"))
 dt <-dt[,-c("X")]
 N_time <- max(as.numeric(sapply(names(dt),function(x){substr(x,nchar(x),nchar(x))})),na.rm=TRUE)
 
-R=200#0 #number of dataset repetitions
+R=500#0 #number of dataset repetitions
 set.seed(200)
 
 simdata_list <-foreach(j=1:R)%do%{
@@ -51,33 +51,3 @@ simdata_list <-foreach(j=1:R)%do%{
 
 saveRDS(simdata_list,file=paste0("./tmp/simdata_list_",as.character(R),"_t",as.character(N_time),"_glm.RDS"))
 
-
-# simdata <- simdata_list[[1]]
-# table(simdata$glp1_1, simdata$mace_hf_1)
-# table(simdata$glp1_2, simdata$mace_hf_2)
-# table(simdata$glp1_3, simdata$mace_hf_3)
-# table(simdata$glp1_4, simdata$mace_hf_4)
-#
-# df <- simdata %>% filter(glp1_1==1 & glp1_2==1 & glp1_3==1 & glp1_4==1)
-# table(df$mace_hf_1)
-# table(df$mace_hf_2)
-# table(df$mace_hf_3)
-# table(df$mace_hf_4)
-
-
-
-
-
-##correlation plot
-# corrplot(cor(as.matrix(dt)), method = "color")
-# for(i in 1:3){
-# corrplot(cor(as.matrix(simdata_list[[i]])), method = "color")
-# }
-# 
-# CreateCatTable(data=dt,vars = names(dt)[6:20])
-# CreateCatTable(data=simdata,vars = names(simdata)[6:20])
-# CreateContTable(data=preds,vars = names(simdata)[6:20])
-
-
-#transport::wasserstein(dt$age_base, simdata_list[[1]]$age_base, p=1, tplan=NULL, costm=NULL, prob=TRUE)
-#waddR::

@@ -27,12 +27,12 @@ dataname <-paste0("simdata_list_",as.character(reps),"_","t",as.character(N_time
 simdata_list <- readRDS(paste0("./tmp/",dataname,".RDS"))
 
 ### register paralleization and set seed
-(cl <-makeCluster(detectCores()-2))
+(cl <-makeCluster(detectCores()/2))
 registerDoParallel(cl)
 registerDoRNG(seed = 123)
 
 
-ci_df <- foreach(i = 1:length(simdata_list),.combine='rbind') %dopar% {
+ci_df <- foreach(i = 1:50,.combine='rbind') %dopar% {
     library(ltmle)
     try(result1 <- run_ltmle(data=simdata_list[[i]],
                              SL.library=final_lib,
@@ -43,14 +43,14 @@ ci_df <- foreach(i = 1:length(simdata_list),.combine='rbind') %dopar% {
                              trunc_level=trunc_level,
                              varmethod="tmle"))
 
-    try(sum1 <- summary(result1))
-    try(sum2 <- summary(result2))
-    if(!is.null(sum1)){
+    if(exists("result1")){
+        sum1 <- summary(result1)
         ic_ci <- cbind("ic", sum1$effect.measures$ATE$estimate, sum1$effect.measures$ATE$CI)
     }else{
       ic_ci <- c("ic","","")
     }
-  if(!is.null(sum2)){
+  if(exists("result2")){
+      (sum2 <- summary(result2))
       tmle_ci <- cbind("tmle", sum2$effect.measures$ATE$estimate, sum2$effect.measures$ATE$CI)
     }else{
     tmle_ci <- c("tmle","","")
@@ -60,4 +60,4 @@ ci_df <- foreach(i = 1:length(simdata_list),.combine='rbind') %dopar% {
   }
 stopCluster(cl)
 
-saveRDS(data.frame(ci_df),paste0("./tmp/ci_est_",dataname,".RDS"))
+saveRDS(data.frame(ci_df),paste0("./tmp/ci_est_",dataname,"_1to50.RDS"))

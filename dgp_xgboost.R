@@ -18,7 +18,7 @@ registerDoParallel(cl)
 dt <-data.table(read.csv("./data/fakedataset.csv"))
 dt <-dt[,-c("X")]
 
-R=200 #number of dataset repetitions
+R=2#00 #number of dataset repetitions
 registerDoRNG(seed = 123)
 # rng <- RNGseq( length(simdata_list) * nrow(specs), seed=1234)
 N_time <- max(as.numeric(sapply(names(dt),function(x){substr(x,nchar(x),nchar(x))})),na.rm=TRUE)
@@ -34,10 +34,7 @@ simdata_list <-foreach(j=1:R)%dopar%{
   simdata <- dt[sample(nrow(dt),nrow(train),replace=F),.(age_base,sex,ie_type,code5txt,quartile_income)]
   preds <- data.frame(matrix(nrow=nrow(simdata),ncol=length(dt)-5))
   models <- as.list(names(dt)[6:length(names(dt))])
-  cutoffs <- seq(0.05,0.95,by=0.05)
-  mses <- matrix(nrow=length(cutoffs))
-  ##ignores censoring
-
+  
   for(out in 1:(length(names(dt))-5)){
     (outcome <- names(dt)[out+5])
     (predictors <- names(train)[1:(grep(outcome,names(train))-1)])
@@ -57,7 +54,7 @@ simdata_list <-foreach(j=1:R)%dopar%{
     
     (xgb_grid = expand.grid(
       # Number of trees to fit, aka boosting iterations
-      nrounds = c(100, 300, 500, 700, 900),
+      nrounds = c(100, 500, 800),
       # Depth of the trees
       max_depth = c(1, 6), 
       # Learning rate (smaller=slower) 
@@ -67,8 +64,12 @@ simdata_list <-foreach(j=1:R)%dopar%{
       subsample = 1.0,
       min_child_weight = 10L))
     
-   
-    model = caret::train(x=x , y = train[[outcome]], 
+    # need to make outcome a factor with valid names
+    y <- as.factor(train[[outcome]])
+    levels(y) <- c("no","yes")
+    
+    #run model training
+    model = caret::train(x=x , y = y, 
                          method = "xgbTree",
                          metric = "ROC",
                          trControl = cv_control,
@@ -76,18 +77,11 @@ simdata_list <-foreach(j=1:R)%dopar%{
                          verbose = TRUE)
   #  xgboost_model <- xgboost(data = x, label=train[[outcome]], params=gbmGrid,objective = "binary:logistic", verbose = 2)
     min(xgb_testparams$evaluation_log$test_logloss_mean)
-    mses <- matrix(nrow=length(cutoffs))
-
-    foreach(k=1:length(cutoffs))%do%{
-      pred_k <- as.numeric(predict(xgboost_model,newdata=model.matrix(as.formula( ~ .^2),simdata)
-                                   )>cutoffs[k])
-      mses[k] <- (sum(train[[outcome]]-pred_k)^2)/nrow(dt)
-    }
-    # ##select the first cutoff that minimizes auc
-    simdata[,outcome] <- as.numeric(predict(xgboost_model,
-                                            newdata=model.matrix(as.formula( ~ .^2), simdata),
-                                            )+rnorm(nrow(simdata),0,0.1)>cutoffs[min(grep(min(mses),mses))])
-
+    
+    probs <- predict(xgboost_model,newdata=model.matrix(as.formula( ~ .^2), simdata))
+    #treat each of these probabilties as a bernoulli trial with that probability
+    simdata[,outcome] <- as.vector(apply(probs,1,function(x){rbinom(1,1,x)}))
+    
   }
   return(simdata)
 

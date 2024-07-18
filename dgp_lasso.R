@@ -18,7 +18,7 @@ library(doRNG)
 dt <-data.table(read.csv("./data/fakedataset.csv"))
 dt <-dt[,-c("X")]
 
-R=500 #number of dataset repetitions
+R=200 #number of dataset repetitions
 #registerDoRNG(seed = 123)
 N_time <- max(as.numeric(sapply(names(dt),function(x){substr(x,nchar(x),nchar(x))})),na.rm=TRUE)
 set.seed(200)

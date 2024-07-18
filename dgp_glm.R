@@ -24,26 +24,17 @@ simdata_list <-foreach(j=1:R)%do%{
   simdata <- dt[sample(nrow(dt),nrow(train),replace=F),.(age_base,sex,ie_type,code5txt,quartile_income)]
   preds <- data.frame(matrix(nrow=nrow(simdata),ncol=length(dt)-5))
   models <- as.list(names(dt)[6:length(names(dt))])
-  cutoffs <- seq(0.05,0.95,by=0.05)
-  mses <- matrix(nrow=length(cutoffs))
-  ##ignores censoring
-
+  
   for(out in 1:(length(names(dt))-5)){
     (outcome <- names(dt)[out+5])
     (predictors <- names(train)[1:(grep(outcome,names(train))-1)])
     (thisformula <- as.formula(paste0(outcome,"~",paste0(predictors,collapse="+"))))
+    #train model
     glm_model <- glm(thisformula, family='binomial',data=train)
-
-     mses <- matrix(nrow=length(cutoffs))
-
-          foreach(j=1:length(cutoffs))%do%{
-            pred_j <- as.numeric(predict(glm_model,newdata=simdata,type='response')>cutoffs[j])
-            mses[j] <- (sum(train[[outcome]]-pred_j)^2)/nrow(dt)
-            }
-    # ##select the first one that minimizes auc
-     simdata[,outcome] <- as.numeric(predict(glm_model,
-                                             newdata=simdata,type='response') +rnorm(nrow(simdata),0,0.1)>cutoffs[min(grep(min(mses),mses))])
-
+    #get predicted probabilities
+    probs <- as.data.frame(predict(glm_model,newdata=simdata,type='response')) 
+    #treat each of these probabilties as a bernoulli trial with that probability
+    simdata[,outcome] <- as.vector(apply(probs,1,function(x){rbinom(1,1,x)}))
   }
   return(simdata)
 

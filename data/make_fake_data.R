@@ -5,7 +5,7 @@ coefs <-  data.table::fread("../../cvd_simulation/data/coefficients.txt")
 
 source("../../cvd_simulation/functions/synthesizeDD.R")
 source("../../cvd_simulation/functions/sim_sig_data.R")
-data_specs <- synthesizeDD(coefs)
+data_specs <- synthesize(coefs)
 N_time=4
 N=50000
 set.seed(255)

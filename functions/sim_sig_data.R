@@ -6,7 +6,7 @@ sim_sig_data <- function(data_specs,n, N_time,iter){
     set.seed(240+i)
     
     d <- sim(data_specs,n)
-    
+    d <- data.table(d)
     
     #note: once events jump to 1, need to remain 1 for remainder of follow up
     for(k in 1:(N_time+1)){
@@ -42,26 +42,27 @@ sim_sig_data <- function(data_specs,n, N_time,iter){
     # d[sum_death== sum_dementia, (death.nodes) := replace(.SD, .SD == 1, 0), .SDcols = death.nodes]
     
     
-    d <- d %>% select("age_base", "sex","ie_type","code5txt","quartile_income","censor_1",
+    d <- d %>% select("age_base", "sex","ie_type","code5txt","quartile_income",
                       "glp1_1",
+                      "censor_1",
                       "mace_hf_1",
                       # "chronic.pulmonary.disease_1",
                       # "hypertension_1",
                       "insulin_1",
-                      "censor_2",
                       "glp1_2",
+                      "censor_2",
                       "mace_hf_2",
                       # "chronic.pulmonary.disease_2",
                       # "hypertension_2",
                       "insulin_2",
-                      "censor_3",
                       "glp1_3",
+                      "censor_3",
                       "mace_hf_3",
                       # "chronic.pulmonary.disease_3",
                       # "hypertension_3",
                       "insulin_3",
-                      "censor_4",
                       "glp1_4",
+                      "censor_4",
                       "mace_hf_4")
     
     sim_list[[i]] <- d
